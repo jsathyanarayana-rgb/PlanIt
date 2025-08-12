@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PlanIt Chatbot</title>
+<style>
+    :root {
+        /* Light theme colors */
+        --bg-color-light: #ffffff;
+        --text-color-light: #000000;
+        --header-color-light: #f1f1f1;
+        --input-bg-light: #e9e9e9;
+        --button-bg-light: #10a37f;
+        --button-hover-light: #0d8b6d;
+
+        /* Dark theme colors */
+        --bg-color-dark: #202123;
+        --text-color-dark: #ffffff;
+        --header-color-dark: #343541;
+        --input-bg-dark: #40414f;
+        --button-bg-dark: #10a37f;
+        --button-hover-dark: #0d8b6d;
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        transition: background-color 0.3s, color 0.3s;
+    }
+
+    body.light {
+        background-color: var(--bg-color-light);
+        color: var(--text-color-light);
+    }
+
+    body.dark {
+        background-color: var(--bg-color-dark);
+        color: var(--text-color-dark);
+    }
+
+    header {
+        padding: 15px;
+        text-align: center;
+        font-size: 1.2em;
+        font-weight: bold;
+    }
+
+    body.light header {
+        background: var(--header-color-light);
+    }
+
+    body.dark header {
+        background: var(--header-color-dark);
+    }
+
+    #chat-box {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    .message {
+        margin-bottom: 10px;
+    }
+
+    .user {
+        color: #00bfff;
+    }
+
+    .bot {
+        color: #90ee90;
+    }
+
+    footer {
+        display: flex;
+        padding: 10px;
+    }
+
+    body.light footer {
+        background: var(--header-color-light);
+    }
+
+    body.dark footer {
+        background: var(--header-color-dark);
+    }
+
+    input {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 5px;
+    }
+
+    body.light input {
+        background: var(--input-bg-light);
+        color: var(--text-color-light);
+    }
+
+    body.dark input {
+        background: var(--input-bg-dark);
+        color: var(--text-color-dark);
+    }
+
+    button {
+        padding: 10px 15px;
+        margin-left: 10px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    body.light button {
+        background: var(--button-bg-light);
+        color: white;
+    }
+
+    body.dark button {
+        background: var(--button-bg-dark);
+        color: white;
+    }
+
+    body.light button:hover {
+        background: var(--button-hover-light);
+    }
+
+    body.dark button:hover {
+        background: var(--button-hover-dark);
+    }
+
+    /* Theme switch dropdown */
+    #theme-select {
+        margin-left: 10px;
+        padding: 5px;
+        border-radius: 5px;
+        border: none;
+    }
+</style>
+</head>
+<body>
+<header>
+    💬 PlanIt Chatbot
+    <select id="theme-select">
+        <option value="system">System</option>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+    </select>
+</header>
+<div id="chat-box"></div>
+<footer>
+    <input type="text" id="user-input" placeholder="Type your message...">
+    <button onclick="sendMessage()">Send</button>
+</footer>
+
+<script>
+    // Theme Handling
+    const themeSelect = document.getElementById("theme-select");
+
+    function applyTheme(theme) {
+        if (theme === "system") {
+            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            document.body.className = prefersDark ? "dark" : "light";
+        } else {
+            document.body.className = theme;
+        }
+    }
+
+    themeSelect.addEventListener("change", () => {
+        localStorage.setItem("theme", themeSelect.value);
+        applyTheme(themeSelect.value);
+    });
+
+    // Load saved theme or system
+    const savedTheme = localStorage.getItem("theme") || "system";
+    themeSelect.value = savedTheme;
+    applyTheme(savedTheme);
+
+    // Chatbot Function
+    async function sendMessage() {
+        let input = document.getElementById("user-input");
+        let chatBox = document.getElementById("chat-box");
+
+        if (input.value.trim() === "") return;
+
+        // Show user message
+        let userMessage = document.createElement("div");
+        userMessage.classList.add("message", "user");
+        userMessage.textContent = "You: " + input.value;
+        chatBox.appendChild(userMessage);
+
+        // Send to backend
+        let res = await fetch("http://127.0.0.1:5000/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: input.value })
+        });
+
+        let data = await res.json();
+
+        // Show bot reply
+        let botMessage = document.createElement("div");
+        botMessage.classList.add("message", "bot");
+        botMessage.textContent = "Bot: " + (data.reply || data.error);
+        chatBox.appendChild(botMessage);
+
+        // Scroll to bottom
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        input.value = "";
+    }
+</script>
+</body>
+</html>
