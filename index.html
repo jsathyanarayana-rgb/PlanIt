@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>PlanIt Chatbot</title>
 <style>
     :root {
@@ -61,10 +61,12 @@
         flex: 1;
         padding: 20px;
         overflow-y: auto;
+        background: transparent;
     }
 
     .message {
         margin-bottom: 10px;
+        white-space: pre-wrap;
     }
 
     .user {
@@ -93,6 +95,7 @@
         padding: 10px;
         border: none;
         border-radius: 5px;
+        font-size: 1em;
     }
 
     body.light input {
@@ -111,6 +114,8 @@
         border: none;
         border-radius: 5px;
         cursor: pointer;
+        font-weight: bold;
+        font-size: 1em;
     }
 
     body.light button {
@@ -131,19 +136,19 @@
         background: var(--button-hover-dark);
     }
 
-    /* Theme switch dropdown */
     #theme-select {
         margin-left: 10px;
         padding: 5px;
         border-radius: 5px;
         border: none;
+        font-size: 1em;
     }
 </style>
 </head>
 <body>
 <header>
     💬 PlanIt Chatbot
-    <select id="theme-select">
+    <select id="theme-select" aria-label="Theme selector">
         <option value="system">System</option>
         <option value="light">Light</option>
         <option value="dark">Dark</option>
@@ -151,13 +156,14 @@
 </header>
 <div id="chat-box"></div>
 <footer>
-    <input type="text" id="user-input" placeholder="Type your message...">
+    <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off" />
     <button onclick="sendMessage()">Send</button>
 </footer>
 
 <script>
-    // Theme Handling
     const themeSelect = document.getElementById("theme-select");
+    const input = document.getElementById("user-input");
+    const chatBox = document.getElementById("chat-box");
 
     function applyTheme(theme) {
         if (theme === "system") {
@@ -173,44 +179,49 @@
         applyTheme(themeSelect.value);
     });
 
-    // Load saved theme or system
+    // Load saved theme or system default
     const savedTheme = localStorage.getItem("theme") || "system";
     themeSelect.value = savedTheme;
     applyTheme(savedTheme);
 
-    // Chatbot Function
     async function sendMessage() {
-        let input = document.getElementById("user-input");
-        let chatBox = document.getElementById("chat-box");
-
         if (input.value.trim() === "") return;
 
-        // Show user message
-        let userMessage = document.createElement("div");
+        const userMessage = document.createElement("div");
         userMessage.classList.add("message", "user");
         userMessage.textContent = "You: " + input.value;
         chatBox.appendChild(userMessage);
 
-        // Send to backend
-        let res = await fetch("http://127.0.0.1:5000/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: input.value })
-        });
+        try {
+            const res = await fetch("/chat", {  // <-- change URL if needed
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: input.value }),
+            });
+            const data = await res.json();
 
-        let data = await res.json();
+            const botMessage = document.createElement("div");
+            botMessage.classList.add("message", "bot");
+            botMessage.textContent = "Bot: " + (data.reply || data.error);
+            chatBox.appendChild(botMessage);
+        } catch (error) {
+            const errorMessage = document.createElement("div");
+            errorMessage.classList.add("message", "bot");
+            errorMessage.textContent = "Bot: Error connecting to server.";
+            chatBox.appendChild(errorMessage);
+        }
 
-        // Show bot reply
-        let botMessage = document.createElement("div");
-        botMessage.classList.add("message", "bot");
-        botMessage.textContent = "Bot: " + (data.reply || data.error);
-        chatBox.appendChild(botMessage);
-
-        // Scroll to bottom
         chatBox.scrollTop = chatBox.scrollHeight;
-
         input.value = "";
     }
+
+    // Send message on Enter key press
+    input.addEventListener("keypress", function (event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            sendMessage();
+        }
+    });
 </script>
 </body>
 </html>
