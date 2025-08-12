@@ -14,6 +14,10 @@ client = OpenAI(
     api_key=os.getenv("HF_TOKEN"),
 )
 
+@app.route("/")
+def home():
+    return "Welcome to PlanIt chatbot!"
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json
